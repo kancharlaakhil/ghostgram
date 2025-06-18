@@ -1,10 +1,29 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, Button } from 'react-native';
+import { auth } from '../firebaseConfig';
+import { signOut } from 'firebase/auth';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => null, // Hide back arrow
+      headerRight: () => (
+        <Button
+          onPress={async () => {
+            await signOut(auth);
+            navigation.replace('Login');
+          }}
+          title="Logout"
+          color="red"
+        />
+      )
+    });
+  }, [navigation]);
+
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Welcome to the Anon Snap App!</Text>
+      <Text>Welcome to Home!</Text>
     </View>
   );
 }
