@@ -24,6 +24,10 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>Welcome to Home!</Text>
+      <Button
+        title="Upload Snap"
+        onPress={() => navigation.navigate('SnapUpload')}
+      />
     </View>
   );
 }

@@ -9,13 +9,9 @@ export default function OnboardingScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
-  const [branch, setBranch] = useState('');
+  const [college, setCollege] = useState('');
 
   const handleSignup = async () => {
-    if (!email.endsWith('.iitr.ac.in')) {
-        Alert.alert('Invalid Email', 'Please use your Institute Email');
-        return;
-    }
     try {
         const userCred = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCred.user;
@@ -23,7 +19,7 @@ export default function OnboardingScreen({ navigation }) {
         uid: user.uid,
         name,
         gender,
-        branch,
+        college,
         friends: [],
         createdAt: new Date()
         });
@@ -45,11 +41,11 @@ export default function OnboardingScreen({ navigation }) {
   return (
     <View style={styles.container}>
         <Text style={styles.heading}>SignUp</Text>
-        <TextInput placeholder="Institute Email" value={email} onChangeText={setEmail} style={styles.input} />
-        <TextInput placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.input} />
+        <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} />
+        <TextInput placeholder="Set Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.input} />
         <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
         <TextInput placeholder="Gender (Male/Female)" value={gender} onChangeText={setGender} style={styles.input} />
-        <TextInput placeholder="Branch" value={branch} onChangeText={setBranch} style={styles.input} />
+        <TextInput placeholder="College" value={college} onChangeText={setCollege} style={styles.input} />
         <Button title="Sign Up" onPress={handleSignup} />
         <Text style={styles.switchText} onPress={() => navigation.replace('Login')}>
             Already have an account? Log In

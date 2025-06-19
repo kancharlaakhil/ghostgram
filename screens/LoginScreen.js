@@ -29,7 +29,7 @@ export default function LoginScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-      <TextInput placeholder="Institute Email" value={email} onChangeText={setEmail} style={styles.input} />
+      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} />
       <TextInput placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.input} />
       <Button title="Log In" onPress={handleLogin} />
       <Text style={styles.switchText} onPress={() => navigation.replace('Onboarding')}>Don't have an account? Sign Up</Text>
