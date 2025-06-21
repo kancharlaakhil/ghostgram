@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { auth, db } from '../firebaseConfig';
@@ -7,7 +7,6 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   fetchSignInMethodsForEmail,
-  onAuthStateChanged,
 } from 'firebase/auth';
 import { collection, doc, getDocs, query, where, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
@@ -16,48 +15,24 @@ export default function OnboardingScreen({ navigation }) {
   const recaptchaVerifier = useRef(null);
   const [step, setStep] = useState(1);
 
-  // Step 1
   const [phoneNumber, setPhoneNumber] = useState('');
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
   const [college, setCollege] = useState('');
   const [confirmation, setConfirmation] = useState(null);
-
-  // Step 2
   const [otp, setOtp] = useState('');
   const [verifiedUser, setVerifiedUser] = useState(null);
 
-  // Step 3
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Listen for verification
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && user.emailVerified) {
-        await setDoc(doc(db, 'users', user.uid), {
-          uid: user.uid,
-          phone: phoneNumber,
-          name,
-          gender,
-          college,
-          email,
-          friends: [],
-          createdAt: serverTimestamp(),
-        });
-        Alert.alert('Here we go!', 'Signup completed successfully', 'Press OK to proceed.', [
-          { text: 'OK', onPress: () => navigation.replace('Login') },
-        ]);
-      }
-    });
-    return unsubscribe;
-  }, [phoneNumber, name, gender, college, email]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const sendOTP = async () => {
     if (!phoneNumber || !name || !gender || !college) {
-        Alert.alert('Missing details', 'Please fill in all details before continuing.');
-        return;
+      Alert.alert('Missing details', 'Please fill in all details before continuing.');
+      return;
     }
 
     if (!phoneNumber.startsWith('+91')) {
@@ -84,8 +59,8 @@ export default function OnboardingScreen({ navigation }) {
 
   const verifyOTP = async () => {
     if (!otp) {
-        Alert.alert('Missing OTP', 'Please enter the OTP sent to your phone.');
-        return;
+      Alert.alert('Missing OTP', 'Please enter the OTP sent to your phone.');
+      return;
     }
     try {
       const result = await confirmation.confirm(otp);
@@ -99,8 +74,8 @@ export default function OnboardingScreen({ navigation }) {
 
   const finishSignup = async () => {
     if (!email || !password || !confirmPassword) {
-        Alert.alert('Missing details', 'Please fill in all details before continuing.');
-        return;
+      Alert.alert('Missing details', 'Please fill in all details before continuing.');
+      return;
     }
 
     if (password !== confirmPassword) {
@@ -120,12 +95,22 @@ export default function OnboardingScreen({ navigation }) {
 
       await sendEmailVerification(user);
 
-      Alert.alert(
-        'Email Sent', 'Please verify your email to complete registration.', [
-            { text: 'OK', onPress: () => navigation.replace('Login') }
-        ]);
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        phone: phoneNumber,
+        name,
+        gender,
+        college,
+        email,
+        friends: [],
+        createdAt: serverTimestamp(),
+      });
+
+      Alert.alert('Email Sent', 'Please verify your email to complete registration.', [
+        { text: 'OK', onPress: () => navigation.replace('Login') },
+      ]);
     } catch (err) {
-      Alert.alert('Email already sent');
+      Alert.alert('Signup Error', err.message);
     }
   };
 
@@ -146,25 +131,25 @@ export default function OnboardingScreen({ navigation }) {
           <TextInput placeholder="Enter Fullname" value={name} onChangeText={setName} style={styles.input} />
           <View style={styles.pickerWrapper}>
             <Picker selectedValue={gender} onValueChange={setGender} style={styles.picker}>
-                <Picker.Item label="Select Gender" value="" />
-                <Picker.Item label="Male" value="Male" />
-                <Picker.Item label="Female" value="Female" />
-                <Picker.Item label="Other" value="Other" />
+              <Picker.Item label="Select Gender" value="" />
+              <Picker.Item label="Male" value="Male" />
+              <Picker.Item label="Female" value="Female" />
+              <Picker.Item label="Other" value="Other" />
             </Picker>
           </View>
           <View style={styles.pickerWrapper}>
             <Picker selectedValue={college} onValueChange={setCollege} style={styles.picker}>
-                <Picker.Item label="Select your College" value="" />
-                <Picker.Item label="IIT Bombay" value="IIT Bombay" />
-                <Picker.Item label="IIT Delhi" value="IIT Delhi" />
-                <Picker.Item label="IIT Madras" value="IIT Madras" />
-                <Picker.Item label="IIT Kanpur" value="IIT Kanpur" />
-                <Picker.Item label="IIT Kharagpur" value="IIT Kharagpur" />
-                <Picker.Item label="IIT Roorkee" value="IIT Roorkee" />
-                <Picker.Item label="IIT Hyderabad" value="IIT Hyderabad" />
-                <Picker.Item label="IIT Guwahati" value="IIT Guwahati" />
-                <Picker.Item label="IIT Indore" value="IIT Indore" />
-                <Picker.Item label="IIT BHU(Varanasi)" value="IIT BHU(Varanasi)" />
+              <Picker.Item label="Select your College" value="" />
+              <Picker.Item label="IIT Bombay" value="IIT Bombay" />
+              <Picker.Item label="IIT Delhi" value="IIT Delhi" />
+              <Picker.Item label="IIT Madras" value="IIT Madras" />
+              <Picker.Item label="IIT Kanpur" value="IIT Kanpur" />
+              <Picker.Item label="IIT Kharagpur" value="IIT Kharagpur" />
+              <Picker.Item label="IIT Roorkee" value="IIT Roorkee" />
+              <Picker.Item label="IIT Hyderabad" value="IIT Hyderabad" />
+              <Picker.Item label="IIT Guwahati" value="IIT Guwahati" />
+              <Picker.Item label="IIT Indore" value="IIT Indore" />
+              <Picker.Item label="IIT BHU(Varanasi)" value="IIT BHU(Varanasi)" />
             </Picker>
           </View>
           <Button title="Send OTP" onPress={sendOTP} />
@@ -173,16 +158,50 @@ export default function OnboardingScreen({ navigation }) {
 
       {step === 2 && (
         <>
-          <TextInput placeholder="Enter OTP" value={otp} onChangeText={setOtp} style={styles.input} keyboardType="numeric" />
+          <TextInput
+            placeholder="Enter OTP"
+            value={otp}
+            onChangeText={setOtp}
+            style={styles.input}
+            keyboardType="numeric"
+          />
           <Button title="Verify OTP" onPress={verifyOTP} />
         </>
       )}
 
       {step === 3 && (
         <>
-          <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" />
-          <TextInput placeholder="Set Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.input} />
-          <TextInput placeholder="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry style={styles.input} />
+          <TextInput
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            placeholder="Set Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            style={styles.input}
+          />
+          <Text style={styles.toggleText} onPress={() => setShowPassword((prev) => !prev)}>
+            {showPassword ? 'Hide Password' : 'Show Password'}
+          </Text>
+
+          <TextInput
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showConfirmPassword}
+            style={styles.input}
+          />
+          <Text style={styles.toggleText} onPress={() => setShowConfirmPassword((prev) => !prev)}>
+            {showConfirmPassword ? 'Hide Confirm Password' : 'Show Confirm Password'}
+          </Text>
+
           <Button title="Finish Signup" onPress={finishSignup} />
         </>
       )}
@@ -201,5 +220,5 @@ const styles = StyleSheet.create({
   switchText: { marginTop: 20, textAlign: 'center', color: 'blue' },
   pickerWrapper: { borderWidth: 1, borderColor: '#ccc', marginVertical: 5 },
   picker: { height: 50, width: '100%' },
-  label: { marginTop: 10, fontWeight: 'bold' },
+  toggleText: { color: 'blue', marginBottom: 10, textAlign: 'right' },
 });
