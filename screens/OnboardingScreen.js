@@ -4,7 +4,8 @@ import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { auth, db } from '../firebaseConfig';
 import {
   signInWithPhoneNumber,
-  createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  linkWithCredential,
   sendEmailVerification,
   fetchSignInMethodsForEmail,
 } from 'firebase/auth';
@@ -28,6 +29,8 @@ export default function OnboardingScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const isvalid = (value) => /^\+91\d{10}$/.test(value);
+  const isvalidEmail = (value) => /\S+@\S+\.\S+/.test(value);
 
   const sendOTP = async () => {
     if (!phoneNumber || !name || !gender || !college) {
@@ -35,7 +38,7 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
-    if (!phoneNumber.startsWith('+91')) {
+    if (!isvalid(phoneNumber)) {
       Alert.alert('Invalid Phone', 'Use +91XXXXXXXXXX format');
       return;
     }
@@ -65,7 +68,7 @@ export default function OnboardingScreen({ navigation }) {
     try {
       const result = await confirmation.confirm(otp);
       setVerifiedUser(result.user);
-      Alert.alert('Phone verification successful', 'Click OK.');
+      Alert.alert('Phone verification successful', 'Proceed to Email and password.');
       setStep(3);
     } catch (err) {
       Alert.alert('OTP Failed', 'Please enter correct OTP.');
@@ -78,20 +81,28 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
+    if (!isvalidEmail(email)) {
+      Alert.alert('Invalid Email', 'Use proper email');
+      return;
+    }
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
-    const providers = await fetchSignInMethodsForEmail(auth, email);
-    if (providers.length > 0) {
-      Alert.alert('Email In Use', 'Email already linked to another account.');
+    const q = query(collection(db, 'users'), where('email', '==', email));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      Alert.alert('Email Exists', 'An account with this Email already exists.');
       return;
     }
 
     try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCred.user;
+      const emailCred = EmailAuthProvider.credential(email, password);
+      const linkedUserCred = await linkWithCredential(verifiedUser, emailCred);
+
+      const user = linkedUserCred.user;
 
       await sendEmailVerification(user);
 
