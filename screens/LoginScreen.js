@@ -27,19 +27,19 @@ export default function LoginScreen({ navigation }) {
   const isEmail = (value) => /\S+@\S+\.\S+/.test(value);
   const isPhone = (value) => /^\+91\d{10}$/.test(value);
 
-  // useEffect(() => {
-  //   const unsubscribe = onAuthStateChanged(auth, async (user) => {
-  //     if (user) {
-  //       if (user.emailVerified) {
-  //         navigation.replace('Home');
-  //       } else {
-  //         navigation.replace('Login');
-  //       }
-  //     }
-  //   });
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        if (user.emailVerified) {
+          navigation.replace('Home');
+        } else {
+          navigation.replace('Login');
+        }
+      }
+    });
 
-  //   return unsubscribe;
-  // }, []);
+    return unsubscribe;
+  }, []);
 
   // ---------------------- PASSWORD LOGIN ----------------------
   const handlePasswordLogin = async () => {
