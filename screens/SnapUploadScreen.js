@@ -1,84 +1,128 @@
-import React, { useState } from 'react';
-import { View, Button, Image, ActivityIndicator, StyleSheet } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Button,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Camera, useCameraDevices } from 'react-native-vision-camera';
+import FaceDetection from '@react-native-ml-kit/face-detection';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage, auth } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { storage, db, auth } from '../firebaseConfig';
 
 export default function SnapUploadScreen({ navigation }) {
-  const [image, setImage] = useState(null);
+  const cameraRef = useRef(null);
+  const [hasPermission, setHasPermission] = useState(false);
+  const devices = useCameraDevices();
+  const device = devices.back;
+
+  const [photoUri, setPhotoUri] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ base64: false });
-    if (!result.cancelled) {
-      setImage(result.assets[0].uri);
-    }
+  useEffect(() => {
+    (async () => {
+      const status = await Camera.requestCameraPermission();
+      setHasPermission(status === 'authorized');
+    })();
+  }, []);
+
+  const takePhoto = async () => {
+    if (!cameraRef.current) return;
+
+    const photo = await cameraRef.current.takePhoto({
+      flash: 'off',
+      qualityPrioritization: 'quality',
+    });
+
+    const uri = 'file://' + photo.path;
+    setPhotoUri(uri);
   };
 
   const blurFacesAndUpload = async () => {
+    if (!photoUri) return;
+
     setUploading(true);
     try {
-      const detection = await FaceDetector.detectFacesAsync(image, {
-        mode: FaceDetector.FaceDetectorMode.fast,
-        detectLandmarks: FaceDetector.FaceDetectorLandmarks.none,
-        runClassifications: FaceDetector.FaceDetectorClassifications.none
-      });
+      const faces = await FaceDetection.detectFromFile(photoUri);
+      let blurredUri = photoUri;
 
-      let blurredImage = image;
-      for (const face of detection.faces) {
-        const manipResult = await ImageManipulator.manipulateAsync(
-          blurredImage,
-          [{
-            crop: {
-              originX: face.bounds.origin.x,
-              originY: face.bounds.origin.y,
-              width: face.bounds.size.width,
-              height: face.bounds.size.height
-            }
-          },
-          { resize: { width: 10, height: 10 } }, // pixelate face
-          { resize: { width: face.bounds.size.width, height: face.bounds.size.height } }
+      for (const face of faces) {
+        const { left, top, width, height } = face.bounds;
+
+        const blurStep1 = await ImageManipulator.manipulateAsync(
+          blurredUri,
+          [
+            { crop: { originX: left, originY: top, width, height } },
+            { resize: { width: 10, height: 10 } },
+            { resize: { width, height } },
           ],
           { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
         );
-        blurredImage = manipResult.uri;
+
+        blurredUri = blurStep1.uri;
       }
 
-      const response = await fetch(blurredImage);
+      const response = await fetch(blurredUri);
       const blob = await response.blob();
+
       const fileRef = ref(storage, `snaps/${auth.currentUser.uid}/${Date.now()}.jpg`);
       await uploadBytes(fileRef, blob);
+
       const downloadURL = await getDownloadURL(fileRef);
 
       await addDoc(collection(db, 'snaps'), {
         from: auth.currentUser.uid,
         imageUrl: downloadURL,
         genderFilter: 'both',
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
 
-      alert('Snap uploaded with blurred faces!');
-      setImage(null);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload snap.');
+      Alert.alert('Success', 'Snap uploaded with blurred faces!');
+      setPhotoUri(null);
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to upload snap.');
     }
+
     setUploading(false);
   };
 
+  if (!device || !hasPermission) {
+    return <View style={styles.center}><ActivityIndicator size="large" /></View>;
+  }
+
   return (
     <View style={styles.container}>
-      <Button title="Pick a Snap" onPress={pickImage} />
-      {image && <Image source={{ uri: image }} style={styles.image} />}
-      {image && !uploading && <Button title="Blur Faces & Upload" onPress={blurFacesAndUpload} />}
+      {!photoUri ? (
+        <>
+          <Camera
+            ref={cameraRef}
+            style={styles.camera}
+            device={device}
+            isActive={true}
+            photo={true}
+          />
+          <Button title="Take Photo" onPress={takePhoto} />
+        </>
+      ) : (
+        <>
+          <Image source={{ uri: photoUri }} style={styles.image} />
+          <Button title="Blur Faces & Upload" onPress={blurFacesAndUpload} />
+          <Button title="Retake" onPress={() => setPhotoUri(null)} />
+        </>
+      )}
       {uploading && <ActivityIndicator size="large" />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  image: { width: 300, height: 400, marginVertical: 10 }
+  container: { flex: 1 },
+  camera: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  image: { width: '100%', height: 500, marginVertical: 10 },
 });

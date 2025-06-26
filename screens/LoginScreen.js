@@ -1,19 +1,11 @@
-import React, { useEffect,useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity,
 } from 'react-native';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { auth, db } from '../firebaseConfig';
-import {
-  signInWithEmailAndPassword,
-  signInWithPhoneNumber,
-  sendEmailVerification,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 export default function LoginScreen({ navigation }) {
-  const recaptchaVerifier = useRef(null);
   const [mode, setMode] = useState('password'); // 'password' or 'otp'
 
   const [loginId, setLoginId] = useState('');
@@ -28,8 +20,9 @@ export default function LoginScreen({ navigation }) {
   const isPhone = (value) => /^\+91\d{10}$/.test(value);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = auth().onAuthStateChanged(async (user) => {
       if (user) {
+        await user.reload();
         if (user.emailVerified) {
           navigation.replace('Home');
         } else {
@@ -47,8 +40,10 @@ export default function LoginScreen({ navigation }) {
       let emailToUse = loginId;
 
       if (isPhone(loginId)) {
-        const q = query(collection(db, 'users'), where('phone', '==', loginId));
-        const snapshot = await getDocs(q);
+        const snapshot = await firestore()
+          .collection('users')
+          .where('phone', '==', loginId)
+          .get();
 
         if (snapshot.empty) {
           Alert.alert('Login Failed', 'Invalid Credentials');
@@ -62,11 +57,11 @@ export default function LoginScreen({ navigation }) {
         return;
       }
 
-      const userCred = await signInWithEmailAndPassword(auth, emailToUse, password);
+      const userCred = await auth().signInWithEmailAndPassword(emailToUse, password);
       const user = userCred.user;
 
       if (!user.emailVerified) {
-        await sendEmailVerification(user);
+        await user.sendEmailVerification();
         Alert.alert('Email Not Verified', `Please verify your email. A link has been sent to: ${emailToUse}`);
         return;
       }
@@ -84,15 +79,18 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    const q = query(collection(db, 'users'), where('phone', '==', phnum));
-    const snapshot = await getDocs(q);
+    const snapshot = await firestore()
+      .collection('users')
+      .where('phone', '==', phnum)
+      .get();
+
     if (snapshot.empty) {
       Alert.alert('No User', 'No account found with this phone number');
       return;
     }
 
     try {
-      const result = await signInWithPhoneNumber(auth, phnum, recaptchaVerifier.current);
+      const result = await auth().signInWithPhoneNumber(phnum);
       setConfirmation(result);
       Alert.alert('OTP Sent', 'Check your SMS for the code');
     } catch (err) {
@@ -111,19 +109,22 @@ export default function LoginScreen({ navigation }) {
       const result = await confirmation.confirm(otp);
       const user = result.user;
 
-      const q = query(collection(db, 'users'), where('phone', '==', phnum));
-      const snapshot = await getDocs(q);
+      const snapshot = await firestore()
+        .collection('users')
+        .where('phone', '==', phnum)
+        .get();
+
       const userDoc = snapshot.docs[0].data();
       const userEmail = userDoc.email;
 
       await user.reload();
       if (!user.emailVerified) {
-        await sendEmailVerification(user);
-        Alert.alert('Email Not Verified', `Please verify your email before logging in. A link has been sent to: ${userEmail}`);
+        await user.sendEmailVerification();
+        Alert.alert('Email Not Verified', `Please verify your email. A link has been sent to: ${userEmail}`);
         navigation.replace('Login');
         return;
       }
-      
+
       navigation.replace('Home');
     } catch (err) {
       Alert.alert('Invalid OTP', 'Please enter the correct OTP');
@@ -132,8 +133,6 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <FirebaseRecaptchaVerifierModal ref={recaptchaVerifier} firebaseConfig={auth.app.options} />
-
       <Text style={styles.heading}>Log In</Text>
 
       {mode === 'password' ? (

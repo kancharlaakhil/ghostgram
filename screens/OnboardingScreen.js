@@ -1,21 +1,19 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { auth, db } from '../firebaseConfig';
+import React, { useState } from 'react';
 import {
-  signInWithPhoneNumber,
+  View, Text, TextInput, Button, StyleSheet, Alert
+} from 'react-native';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import {
   EmailAuthProvider,
   linkWithCredential,
   sendEmailVerification,
-  fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import { collection, doc, getDocs, query, where, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
 
 export default function OnboardingScreen({ navigation }) {
-  const recaptchaVerifier = useRef(null);
   const [step, setStep] = useState(1);
-
   const [phoneNumber, setPhoneNumber] = useState('');
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
@@ -23,12 +21,12 @@ export default function OnboardingScreen({ navigation }) {
   const [confirmation, setConfirmation] = useState(null);
   const [otp, setOtp] = useState('');
   const [verifiedUser, setVerifiedUser] = useState(null);
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const isvalid = (value) => /^\+91\d{10}$/.test(value);
   const isvalidEmail = (value) => /\S+@\S+\.\S+/.test(value);
 
@@ -43,7 +41,7 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
-    const q = query(collection(db, 'users'), where('phone', '==', phoneNumber));
+    const q = query(firestore().collection('users'), where('phone', '==', phoneNumber));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       Alert.alert('Phone Exists', 'An account with this phone number already exists.');
@@ -51,7 +49,7 @@ export default function OnboardingScreen({ navigation }) {
     }
 
     try {
-      const result = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier.current);
+      const result = await auth().signInWithPhoneNumber(phoneNumber); // ✅ native reCAPTCHA handled automatically
       setConfirmation(result);
       Alert.alert('OTP Sent', 'Enter the code to continue');
       setStep(2);
@@ -65,6 +63,7 @@ export default function OnboardingScreen({ navigation }) {
       Alert.alert('Missing OTP', 'Please enter the OTP sent to your phone.');
       return;
     }
+
     try {
       const result = await confirmation.confirm(otp);
       setVerifiedUser(result.user);
@@ -91,7 +90,7 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
-    const q = query(collection(db, 'users'), where('email', '==', email));
+    const q = query(firestore().collection('users'), where('email', '==', email));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       Alert.alert('Email Exists', 'An account with this Email already exists.');
@@ -101,12 +100,11 @@ export default function OnboardingScreen({ navigation }) {
     try {
       const emailCred = EmailAuthProvider.credential(email, password);
       const linkedUserCred = await linkWithCredential(verifiedUser, emailCred);
-
       const user = linkedUserCred.user;
 
       await sendEmailVerification(user);
 
-      await setDoc(doc(db, 'users', user.uid), {
+      await setDoc(doc(firestore(), 'users', user.uid), {
         uid: user.uid,
         phone: phoneNumber,
         name,
@@ -127,7 +125,6 @@ export default function OnboardingScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <FirebaseRecaptchaVerifierModal ref={recaptchaVerifier} firebaseConfig={auth.app.options} />
       <Text style={styles.heading}>Sign Up</Text>
 
       {step === 1 && (
