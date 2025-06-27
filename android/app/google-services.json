@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "918642141603",
+    "project_id": "ghostgram-42be7",
+    "storage_bucket": "ghostgram-42be7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:918642141603:android:005c0fd5e158ef5d049216",
+        "android_client_info": {
+          "package_name": "com.akhil_28_11.ghostgram"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9AfjLULpXJBS4Y1LNpTic1lb2WYrIySY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
