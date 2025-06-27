@@ -6,8 +6,9 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Text,
 } from 'react-native';
-import { Camera, useCameraDevices } from 'react-native-vision-camera';
+import { Camera, useCameraDevices, useCameraPermission, useMicrophonePermission } from 'react-native-vision-camera';
 import FaceDetection from '@react-native-ml-kit/face-detection';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -16,17 +17,19 @@ import { storage, db, auth } from '../firebaseConfig';
 
 export default function SnapUploadScreen({ navigation }) {
   const cameraRef = useRef(null);
-  const [hasPermission, setHasPermission] = useState(false);
-  const devices = useCameraDevices();
-  const device = devices.back;
-
   const [photoUri, setPhotoUri] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  const { hasPermission: camPerm, requestPermission: requestCam } = useCameraPermission();
+  const { hasPermission: micPerm, requestPermission: requestMic } = useMicrophonePermission();
+
+  const devices = useCameraDevices();
+  const device = devices.back;
+
   useEffect(() => {
     (async () => {
-      const status = await Camera.requestCameraPermission();
-      setHasPermission(status === 'authorized');
+      if (!camPerm) await requestCam();
+      if (!micPerm) await requestMic();
     })();
   }, []);
 
@@ -47,13 +50,14 @@ export default function SnapUploadScreen({ navigation }) {
 
     setUploading(true);
     try {
-      const faces = await FaceDetection.detectFromFile(photoUri);
-      let blurredUri = photoUri;
+      const resized = await ImageManipulator.manipulateAsync(photoUri, [{ resize: { width: 720 } }]);
+      const faces = await FaceDetection.detectFromFile(resized.uri);
+      let blurredUri = resized.uri;
 
       for (const face of faces) {
         const { left, top, width, height } = face.bounds;
 
-        const blurStep1 = await ImageManipulator.manipulateAsync(
+        const croppedBlurred = await ImageManipulator.manipulateAsync(
           blurredUri,
           [
             { crop: { originX: left, originY: top, width, height } },
@@ -63,7 +67,7 @@ export default function SnapUploadScreen({ navigation }) {
           { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
         );
 
-        blurredUri = blurStep1.uri;
+        blurredUri = croppedBlurred.uri;
       }
 
       const response = await fetch(blurredUri);
@@ -71,7 +75,6 @@ export default function SnapUploadScreen({ navigation }) {
 
       const fileRef = ref(storage, `snaps/${auth.currentUser.uid}/${Date.now()}.jpg`);
       await uploadBytes(fileRef, blob);
-
       const downloadURL = await getDownloadURL(fileRef);
 
       await addDoc(collection(db, 'snaps'), {
@@ -86,13 +89,18 @@ export default function SnapUploadScreen({ navigation }) {
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to upload snap.');
+    } finally {
+      setUploading(false);
     }
-
-    setUploading(false);
   };
 
-  if (!device || !hasPermission) {
-    return <View style={styles.center}><ActivityIndicator size="large" /></View>;
+  if (!device || !camPerm || !micPerm) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="blue" />
+        <Text>Loading camera permissions...</Text>
+      </View>
+    );
   }
 
   return (
@@ -115,7 +123,7 @@ export default function SnapUploadScreen({ navigation }) {
           <Button title="Retake" onPress={() => setPhotoUri(null)} />
         </>
       )}
-      {uploading && <ActivityIndicator size="large" />}
+      {uploading && <ActivityIndicator size="large" color="green" />}
     </View>
   );
 }

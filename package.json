@@ -21,7 +21,7 @@
     "@tensorflow/tfjs": "^4.22.0",
     "expo": "53.0.13",
     "expo-camera": "~16.1.9",
-    "expo-dev-client": "~5.2.1",
+    "expo-dev-client": "~5.2.2",
     "expo-face-detector": "^13.0.2",
     "expo-image-manipulator": "~13.1.7",
     "expo-image-picker": "~16.1.4",
@@ -55,7 +55,8 @@
     }
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "@react-native-community/cli": "latest"
   },
   "private": true
 }

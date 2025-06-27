@@ -20,6 +20,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./android/app/google-services.json",
       "edgeToEdgeEnabled": true,
       "package": "com.akhil_28_11.ghostgram"
     },

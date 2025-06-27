@@ -2,15 +2,24 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, Button, StyleSheet, Alert
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { Picker } from '@react-native-picker/picker';
+
+import { auth, db } from '../firebaseConfig';
 import {
   EmailAuthProvider,
   linkWithCredential,
   sendEmailVerification,
+  signInWithPhoneNumber,
 } from 'firebase/auth';
-import { collection, doc, getDocs, query, where, setDoc, serverTimestamp } from 'firebase/firestore';
-import { Picker } from '@react-native-picker/picker';
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  where,
+  setDoc,
+  serverTimestamp
+} from 'firebase/firestore';
 
 export default function OnboardingScreen({ navigation }) {
   const [step, setStep] = useState(1);
@@ -27,7 +36,7 @@ export default function OnboardingScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const isvalid = (value) => /^\+91\d{10}$/.test(value);
+  const isvalidPhone = (value) => /^\+91\d{10}$/.test(value);
   const isvalidEmail = (value) => /\S+@\S+\.\S+/.test(value);
 
   const sendOTP = async () => {
@@ -36,12 +45,12 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
-    if (!isvalid(phoneNumber)) {
+    if (!isvalidPhone(phoneNumber)) {
       Alert.alert('Invalid Phone', 'Use +91XXXXXXXXXX format');
       return;
     }
 
-    const q = query(firestore().collection('users'), where('phone', '==', phoneNumber));
+    const q = query(collection(db, 'users'), where('phone', '==', phoneNumber));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       Alert.alert('Phone Exists', 'An account with this phone number already exists.');
@@ -49,7 +58,7 @@ export default function OnboardingScreen({ navigation }) {
     }
 
     try {
-      const result = await auth().signInWithPhoneNumber(phoneNumber); // ✅ native reCAPTCHA handled automatically
+      const result = await signInWithPhoneNumber(auth, phoneNumber);
       setConfirmation(result);
       Alert.alert('OTP Sent', 'Enter the code to continue');
       setStep(2);
@@ -67,31 +76,30 @@ export default function OnboardingScreen({ navigation }) {
     try {
       const result = await confirmation.confirm(otp);
       setVerifiedUser(result.user);
-      Alert.alert('Phone verification successful', 'Proceed to Email and password.');
+      Alert.alert('Phone verified', 'Proceed to Email and Password step.');
       setStep(3);
     } catch (err) {
-      Alert.alert('OTP Failed', 'Please enter correct OTP.');
+      Alert.alert('OTP Failed', 'Please enter the correct OTP.');
     }
   };
 
   const finishSignup = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Missing details', 'Please fill in all details before continuing.');
+      Alert.alert('Missing details', 'Please fill in all details.');
       return;
     }
 
     if (!isvalidEmail(email)) {
-      Alert.alert('Invalid Email', 'Use proper email');
+      Alert.alert('Invalid Email', 'Use a valid email address.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert('Error', 'Passwords do not match.');
       return;
     }
 
-    const q = query(firestore().collection('users'), where('email', '==', email));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
     if (!snapshot.empty) {
       Alert.alert('Email Exists', 'An account with this Email already exists.');
       return;
@@ -104,7 +112,7 @@ export default function OnboardingScreen({ navigation }) {
 
       await sendEmailVerification(user);
 
-      await setDoc(doc(firestore(), 'users', user.uid), {
+      await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         phone: phoneNumber,
         name,
@@ -130,13 +138,19 @@ export default function OnboardingScreen({ navigation }) {
       {step === 1 && (
         <>
           <TextInput
-            placeholder="Enter mobile number (+91XXXXXXXXXX)"
+            placeholder="Mobile Number (+91XXXXXXXXXX)"
             value={phoneNumber}
             onChangeText={setPhoneNumber}
             style={styles.input}
             keyboardType="phone-pad"
           />
-          <TextInput placeholder="Enter Fullname" value={name} onChangeText={setName} style={styles.input} />
+          <TextInput
+            placeholder="Full Name"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            autoCapitalize="words"
+          />
           <View style={styles.pickerWrapper}>
             <Picker selectedValue={gender} onValueChange={setGender} style={styles.picker}>
               <Picker.Item label="Select Gender" value="" />
@@ -187,7 +201,6 @@ export default function OnboardingScreen({ navigation }) {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-
           <TextInput
             placeholder="Set Password"
             value={password}
@@ -198,7 +211,6 @@ export default function OnboardingScreen({ navigation }) {
           <Text style={styles.toggleText} onPress={() => setShowPassword((prev) => !prev)}>
             {showPassword ? 'Hide Password' : 'Show Password'}
           </Text>
-
           <TextInput
             placeholder="Confirm Password"
             value={confirmPassword}
@@ -209,7 +221,6 @@ export default function OnboardingScreen({ navigation }) {
           <Text style={styles.toggleText} onPress={() => setShowConfirmPassword((prev) => !prev)}>
             {showConfirmPassword ? 'Hide Confirm Password' : 'Show Confirm Password'}
           </Text>
-
           <Button title="Finish Signup" onPress={finishSignup} />
         </>
       )}

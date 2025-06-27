@@ -2,106 +2,103 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth, db } from '../firebaseConfig';
+import {
+  signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  onAuthStateChanged
+} from 'firebase/auth';
+import {
+  collection,
+  query,
+  where,
+  getDocs
+} from 'firebase/firestore';
 
 export default function LoginScreen({ navigation }) {
-  const [mode, setMode] = useState('password'); // 'password' or 'otp'
-
+  const [mode, setMode] = useState('password');
   const [loginId, setLoginId] = useState('');
   const [phnum, setPhnum] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
   const [otp, setOtp] = useState('');
   const [confirmation, setConfirmation] = useState(null);
 
-  const isEmail = (value) => /\S+@\S+\.\S+/.test(value);
-  const isPhone = (value) => /^\+91\d{10}$/.test(value);
+  const isEmail = (val) => /\S+@\S+\.\S+/.test(val);
+  const isPhone = (val) => /^\+91\d{10}$/.test(val);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         await user.reload();
         if (user.emailVerified) {
           navigation.replace('Home');
-        } else {
-          navigation.replace('Login');
         }
       }
     });
-
     return unsubscribe;
   }, []);
 
-  // ---------------------- PASSWORD LOGIN ----------------------
   const handlePasswordLogin = async () => {
     try {
       let emailToUse = loginId;
 
       if (isPhone(loginId)) {
-        const snapshot = await firestore()
-          .collection('users')
-          .where('phone', '==', loginId)
-          .get();
-
+        const q = query(collection(db, 'users'), where('phone', '==', loginId));
+        const snapshot = await getDocs(q);
         if (snapshot.empty) {
-          Alert.alert('Login Failed', 'Invalid Credentials');
+          Alert.alert('Login Failed', 'Invalid credentials');
           return;
         }
-
         const userDoc = snapshot.docs[0].data();
         emailToUse = userDoc.email;
       } else if (!isEmail(loginId)) {
-        Alert.alert('Invalid Input', 'Enter a valid Email or Phone (+91XXXXXXXXXX)');
+        Alert.alert('Invalid Input', 'Use a valid email or +91XXXXXXXXXX');
         return;
       }
 
-      const userCred = await auth().signInWithEmailAndPassword(emailToUse, password);
+      const userCred = await signInWithEmailAndPassword(auth, emailToUse, password);
       const user = userCred.user;
 
       if (!user.emailVerified) {
         await user.sendEmailVerification();
-        Alert.alert('Email Not Verified', `Please verify your email. A link has been sent to: ${emailToUse}`);
+        Alert.alert('Email Not Verified', `Verification link sent to ${emailToUse}`);
         return;
       }
 
       navigation.replace('Home');
-    } catch (error) {
-      Alert.alert('Login Error', 'Invalid Credentials');
+    } catch (err) {
+      Alert.alert('Login Error', err.message);
     }
   };
 
-  // ---------------------- SEND OTP ----------------------
   const sendOTP = async () => {
     if (!isPhone(phnum)) {
-      Alert.alert('Invalid Phone', 'Enter a valid phone number in +91XXXXXXXXXX format');
+      Alert.alert('Invalid Phone', 'Use format +91XXXXXXXXXX');
       return;
     }
 
-    const snapshot = await firestore()
-      .collection('users')
-      .where('phone', '==', phnum)
-      .get();
-
+    const q = query(collection(db, 'users'), where('phone', '==', phnum));
+    const snapshot = await getDocs(q);
     if (snapshot.empty) {
-      Alert.alert('No User', 'No account found with this phone number');
+      Alert.alert('No Account', 'No user with this phone');
       return;
     }
 
     try {
-      const result = await auth().signInWithPhoneNumber(phnum);
+      console.log('Phone Number:', phnum);
+      console.log('Auth Object:', auth);
+      const result = await signInWithPhoneNumber(auth, phnum);
       setConfirmation(result);
-      Alert.alert('OTP Sent', 'Check your SMS for the code');
+      Alert.alert('OTP Sent', 'Check your messages');
     } catch (err) {
       Alert.alert('OTP Error', err.message);
     }
   };
 
-  // ---------------------- CONFIRM OTP ----------------------
   const confirmOTP = async () => {
     if (!otp || !confirmation) {
-      Alert.alert('Missing OTP', 'Please enter the OTP sent to your phone.');
+      Alert.alert('Enter OTP', 'Please enter the code sent to your phone');
       return;
     }
 
@@ -109,25 +106,21 @@ export default function LoginScreen({ navigation }) {
       const result = await confirmation.confirm(otp);
       const user = result.user;
 
-      const snapshot = await firestore()
-        .collection('users')
-        .where('phone', '==', phnum)
-        .get();
-
-      const userDoc = snapshot.docs[0].data();
-      const userEmail = userDoc.email;
+      const q = query(collection(db, 'users'), where('phone', '==', phnum));
+      const snapshot = await getDocs(q);
+      const userEmail = snapshot.docs[0]?.data()?.email;
 
       await user.reload();
       if (!user.emailVerified) {
         await user.sendEmailVerification();
-        Alert.alert('Email Not Verified', `Please verify your email. A link has been sent to: ${userEmail}`);
+        Alert.alert('Email Not Verified', `Check your inbox: ${userEmail}`);
         navigation.replace('Login');
         return;
       }
 
       navigation.replace('Home');
     } catch (err) {
-      Alert.alert('Invalid OTP', 'Please enter the correct OTP');
+      Alert.alert('Invalid OTP', 'Try again');
     }
   };
 
@@ -138,12 +131,10 @@ export default function LoginScreen({ navigation }) {
       {mode === 'password' ? (
         <>
           <TextInput
-            placeholder='Email or Phone (+91XXXXXXXXXX)'
+            placeholder="Email or +91XXXXXXXXXX"
             value={loginId}
             onChangeText={setLoginId}
             style={styles.input}
-            keyboardType='email-address'
-            autoCapitalize="none"
           />
           <View style={styles.passwordWrapper}>
             <TextInput
@@ -153,33 +144,29 @@ export default function LoginScreen({ navigation }) {
               secureTextEntry={!showPassword}
               style={[styles.input, { flex: 1 }]}
             />
-            <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} style={styles.toggle}>
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.toggle}>
               <Text style={{ color: 'blue' }}>{showPassword ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
           </View>
-
           <Button title="Login" onPress={handlePasswordLogin} />
         </>
       ) : (
         <>
           <TextInput
-            placeholder='Phone Number (+91XXXXXXXXXX)'
+            placeholder="+91XXXXXXXXXX"
             value={phnum}
             onChangeText={setPhnum}
             style={styles.input}
-            keyboardType='phone-pad'
-            autoCapitalize="none"
           />
           {confirmation && (
             <TextInput
               placeholder="Enter OTP"
               value={otp}
               onChangeText={setOtp}
-              style={styles.input}
               keyboardType="numeric"
+              style={styles.input}
             />
           )}
-
           <Button title={confirmation ? 'Login' : 'Send OTP'} onPress={confirmation ? confirmOTP : sendOTP} />
         </>
       )}
@@ -191,12 +178,8 @@ export default function LoginScreen({ navigation }) {
         {mode === 'password' ? 'Login with OTP Instead' : 'Login with Password Instead'}
       </Text>
 
-      <Text style={styles.switchText} onPress={() => navigation.navigate('ForgotPassword')}>
-        Forgot Password?
-      </Text>
-      <Text style={styles.switchText} onPress={() => navigation.replace('Onboarding')}>
-        Don't have an account? Sign Up
-      </Text>
+      <Text style={styles.switchText} onPress={() => navigation.navigate('ForgotPassword')}>Forgot Password?</Text>
+      <Text style={styles.switchText} onPress={() => navigation.replace('Onboarding')}>Don't have an account? Sign Up</Text>
     </View>
   );
 }

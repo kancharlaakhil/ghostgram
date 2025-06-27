@@ -1,4 +1,3 @@
-// firebaseConfig.js
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   initializeAuth,
@@ -18,14 +17,11 @@ const firebaseConfig = {
   appId: '1:918642141603:web:43160cafa32ba3fa049216',
 };
 
-// ✅ Only initialize once
 let app;
 let auth;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
-
-  // ✅ Proper auth initialization for React Native
   auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
   });
@@ -38,5 +34,3 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 export { app, auth, db, storage };
-
-
