@@ -20,6 +20,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ],
       "googleServicesFile": "./android/app/google-services.json",
       "edgeToEdgeEnabled": true,
       "package": "com.akhil_28_11.ghostgram"
@@ -36,13 +40,19 @@
     "plugins": [
       "expo-build-properties",
       [
-      "react-native-vision-camera",
-      {
-        "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera.",
-        "enableMicrophonePermission": true,
-        "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
-      }
-    ]
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera.",
+          "enableMicrophonePermission": true,
+          "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
+        }
+      ],
+      [
+        "react-native-permissions",
+        {
+          "permissions": ["CAMERA", "MICROPHONE"]
+        }
+      ]
     ]
   }
 }
