@@ -6,7 +6,6 @@
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-  <uses-feature android:name="android.hardware.camera" android:required="true"/>
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
@@ -30,5 +29,6 @@
         <data android:scheme="exp+ghostgram"/>
       </intent-filter>
     </activity>
+    <uses-feature android:name="android.hardware.camera" android:required="true"/>
   </application>
 </manifest>
