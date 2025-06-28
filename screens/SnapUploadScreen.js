@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Button,
@@ -8,41 +8,50 @@ import {
   Alert,
   Text,
 } from 'react-native';
-import { Camera, useCameraDevices, useCameraPermission, useMicrophonePermission } from 'react-native-vision-camera';
+import {
+  Camera,
+  useCameraDevices,
+  useCameraPermission,
+  useMicrophonePermission,
+} from 'react-native-vision-camera';
 import FaceDetection from '@react-native-ml-kit/face-detection';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { storage, db, auth } from '../firebaseConfig';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+import auth from '@react-native-firebase/auth';
 
 export default function SnapUploadScreen({ navigation }) {
   const cameraRef = useRef(null);
   const [photoUri, setPhotoUri] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  const device = useCameraDevices('back');
   const { hasPermission: camPerm, requestPermission: requestCam } = useCameraPermission();
   const { hasPermission: micPerm, requestPermission: requestMic } = useMicrophonePermission();
 
-  const devices = useCameraDevices();
-  const device = devices.back;
 
   useEffect(() => {
     (async () => {
-      if (!camPerm) await requestCam();
-      if (!micPerm) await requestMic();
+      const camStatus = await requestCam();
+      const micStatus = await requestMic();
+      console.log('Camera permission:', camStatus, 'Mic permission:', micStatus);
     })();
   }, []);
 
   const takePhoto = async () => {
     if (!cameraRef.current) return;
+    try {
+      const photo = await cameraRef.current.takePhoto({
+        flash: 'off',
+        qualityPrioritization: 'quality',
+      });
 
-    const photo = await cameraRef.current.takePhoto({
-      flash: 'off',
-      qualityPrioritization: 'quality',
-    });
-
-    const uri = 'file://' + photo.path;
-    setPhotoUri(uri);
+      const uri = 'file://' + photo.path;
+      setPhotoUri(uri);
+    } catch (err) {
+      console.error('Photo capture error:', err);
+      Alert.alert('Error', 'Could not capture photo.');
+    }
   };
 
   const blurFacesAndUpload = async () => {
@@ -52,6 +61,7 @@ export default function SnapUploadScreen({ navigation }) {
     try {
       const resized = await ImageManipulator.manipulateAsync(photoUri, [{ resize: { width: 720 } }]);
       const faces = await FaceDetection.detectFromFile(resized.uri);
+
       let blurredUri = resized.uri;
 
       for (const face of faces) {
@@ -70,35 +80,36 @@ export default function SnapUploadScreen({ navigation }) {
         blurredUri = croppedBlurred.uri;
       }
 
-      const response = await fetch(blurredUri);
-      const blob = await response.blob();
+      const fileName = `${Date.now()}.jpg`;
+      const filePath = `snaps/${auth().currentUser.uid}/${fileName}`;
+      const ref = storage().ref(filePath);
 
-      const fileRef = ref(storage, `snaps/${auth.currentUser.uid}/${Date.now()}.jpg`);
-      await uploadBytes(fileRef, blob);
-      const downloadURL = await getDownloadURL(fileRef);
+      await ref.putFile(blurredUri);
+      const downloadURL = await ref.getDownloadURL();
 
-      await addDoc(collection(db, 'snaps'), {
-        from: auth.currentUser.uid,
+      await firestore().collection('snaps').add({
+        from: auth().currentUser.uid,
         imageUrl: downloadURL,
         genderFilter: 'both',
-        createdAt: serverTimestamp(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
       Alert.alert('Success', 'Snap uploaded with blurred faces!');
       setPhotoUri(null);
+      navigation.goBack();
     } catch (err) {
-      console.error(err);
+      console.error('Upload error:', err);
       Alert.alert('Error', 'Failed to upload snap.');
     } finally {
       setUploading(false);
     }
   };
 
-  if (!device || !camPerm || !micPerm) {
+  if (!camPerm || !micPerm || !device) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="blue" />
-        <Text>Loading camera permissions...</Text>
+        <Text>Loading camera...</Text>
       </View>
     );
   }
@@ -123,14 +134,26 @@ export default function SnapUploadScreen({ navigation }) {
           <Button title="Retake" onPress={() => setPhotoUri(null)} />
         </>
       )}
-      {uploading && <ActivityIndicator size="large" color="green" />}
+      {uploading && (
+        <View style={styles.uploading}>
+          <ActivityIndicator size="large" color="green" />
+          <Text>Uploading...</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: 'white' },
   camera: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   image: { width: '100%', height: 500, marginVertical: 10 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  uploading: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    alignItems: 'center',
+  },
 });

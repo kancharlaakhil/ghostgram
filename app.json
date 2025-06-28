@@ -32,6 +32,17 @@
         "projectId": "a8f25f6a-a74d-4972-804f-fff416be01b2"
       }
     },
-    "owner": "akhil_28_11"
+    "owner": "akhil_28_11",
+    "plugins": [
+      "expo-build-properties",
+      [
+      "react-native-vision-camera",
+      {
+        "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera.",
+        "enableMicrophonePermission": true,
+        "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
+      }
+    ]
+    ]
   }
 }

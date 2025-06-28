@@ -5,21 +5,13 @@ import {
 import { Picker } from '@react-native-picker/picker';
 
 import { auth, db } from '../firebaseConfig';
+import authNative from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+
 import {
   EmailAuthProvider,
   linkWithCredential,
-  sendEmailVerification,
-  signInWithPhoneNumber,
-} from 'firebase/auth';
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  where,
-  setDoc,
-  serverTimestamp
-} from 'firebase/firestore';
+} from '@react-native-firebase/auth';
 
 export default function OnboardingScreen({ navigation }) {
   const [step, setStep] = useState(1);
@@ -50,15 +42,18 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
-    const q = query(collection(db, 'users'), where('phone', '==', phoneNumber));
-    const snapshot = await getDocs(q);
+    const snapshot = await firestore()
+      .collection('users')
+      .where('phone', '==', phoneNumber)
+      .get();
+
     if (!snapshot.empty) {
       Alert.alert('Phone Exists', 'An account with this phone number already exists.');
       return;
     }
 
     try {
-      const result = await signInWithPhoneNumber(auth, phoneNumber);
+      const result = await authNative().signInWithPhoneNumber(phoneNumber);
       setConfirmation(result);
       Alert.alert('OTP Sent', 'Enter the code to continue');
       setStep(2);
@@ -99,7 +94,11 @@ export default function OnboardingScreen({ navigation }) {
       return;
     }
 
-    const snapshot = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
+    const snapshot = await firestore()
+      .collection('users')
+      .where('email', '==', email)
+      .get();
+
     if (!snapshot.empty) {
       Alert.alert('Email Exists', 'An account with this Email already exists.');
       return;
@@ -110,9 +109,9 @@ export default function OnboardingScreen({ navigation }) {
       const linkedUserCred = await linkWithCredential(verifiedUser, emailCred);
       const user = linkedUserCred.user;
 
-      await sendEmailVerification(user);
+      await user.sendEmailVerification();
 
-      await setDoc(doc(db, 'users', user.uid), {
+      await firestore().collection('users').doc(user.uid).set({
         uid: user.uid,
         phone: phoneNumber,
         name,
@@ -120,7 +119,7 @@ export default function OnboardingScreen({ navigation }) {
         college,
         email,
         friends: [],
-        createdAt: serverTimestamp(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
       Alert.alert('Email Sent', 'Please verify your email to complete registration.', [

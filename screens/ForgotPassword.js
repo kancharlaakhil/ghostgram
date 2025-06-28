@@ -7,13 +7,13 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth, db } from '../firebaseConfig';
-import { query, collection, where, getDocs } from 'firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
-  const isvalidEmail = (value) => /\S+@\S+\.\S+/.test(value);
+
+  const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
 
   const handleEmailReset = async () => {
     if (!email) {
@@ -21,20 +21,23 @@ export default function ForgotPasswordScreen({ navigation }) {
       return;
     }
 
-    if(!isvalidEmail(email)){
-      Alert.alert('Invalid format','Please enter correct Email format');
-      return;
-    }
-
-    const q = query(collection(db, 'users'), where('email', '==', email));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-      Alert.alert('No User', 'No account found with this Email');
+    if (!isValidEmail(email)) {
+      Alert.alert('Invalid Format', 'Please enter a valid email address.');
       return;
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      const snapshot = await firestore()
+        .collection('users')
+        .where('email', '==', email)
+        .get();
+
+      if (snapshot.empty) {
+        Alert.alert('No User Found', 'No account found with this email.');
+        return;
+      }
+
+      await auth().sendPasswordResetEmail(email);
       Alert.alert('Success', 'Password reset link sent to your email.');
       navigation.goBack();
     } catch (err) {

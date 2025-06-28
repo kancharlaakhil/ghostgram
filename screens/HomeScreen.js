@@ -6,42 +6,31 @@ import {
   TouchableOpacity,
   StyleSheet
 } from 'react-native';
-import { auth, db } from '../firebaseConfig';
-import { signOut } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import {
-  collection,
-  doc,
-  getDoc,
-  onSnapshot,
-  query,
-  where,
-  or
-} from 'firebase/firestore';
 
 export default function HomeScreen({ navigation }) {
   const [chats, setChats] = useState([]);
   const [userUid, setUserUid] = useState(null);
 
   useEffect(() => {
-    const currentUser = auth.currentUser;
+    const currentUser = auth().currentUser;
     if (!currentUser) return;
 
     setUserUid(currentUser.uid);
 
-    // Listen for chats that include the user
-    const q = query(
-      collection(db, 'chats'),
-      where('participants', 'array-contains', currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const chatList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setChats(chatList);
-    });
+    // Query chats where user is a participant
+    const unsubscribe = firestore()
+      .collection('chats')
+      .where('participants', 'array-contains', currentUser.uid)
+      .onSnapshot(snapshot => {
+        const chatList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setChats(chatList);
+      });
 
     return () => unsubscribe();
   }, []);
@@ -52,10 +41,10 @@ export default function HomeScreen({ navigation }) {
       headerRight: () => (
         <TouchableOpacity
           onPress={async () => {
-            await signOut(auth);
+            await auth().signOut();
             navigation.replace('Login');
           }}
-          style={{ marginRight: 2 }}
+          style={{ marginRight: 10 }}
         >
           <Ionicons name="log-out-outline" size={25} color="red" />
         </TouchableOpacity>
@@ -65,14 +54,16 @@ export default function HomeScreen({ navigation }) {
 
   const renderChatItem = ({ item }) => {
     const otherUid = item.participants.find(uid => uid !== userUid);
+    const chatName = item.isAnonymous
+      ? 'Anonymous Chat'
+      : item.displayName || `Chat with ${otherUid}`;
+
     return (
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() => navigation.navigate('Chat', { chatId: item.id })}
       >
-        <Text style={styles.chatTitle}>
-          {item.isAnonymous ? 'Anonymous Chat' : item.displayName || `Chat with ${otherUid}`}
-        </Text>
+        <Text style={styles.chatTitle}>{chatName}</Text>
       </TouchableOpacity>
     );
   };
@@ -86,7 +77,7 @@ export default function HomeScreen({ navigation }) {
         ListEmptyComponent={<Text style={styles.empty}>No chats yet</Text>}
       />
 
-      {/* Bottom bar */}
+      {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           onPress={() => navigation.navigate('SnapUpload')}

@@ -3,20 +3,11 @@ import {
   View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity,
 } from 'react-native';
 import { auth, db } from '../firebaseConfig';
-import {
-  signInWithEmailAndPassword,
-  signInWithPhoneNumber,
-  onAuthStateChanged
-} from 'firebase/auth';
-import {
-  collection,
-  query,
-  where,
-  getDocs
-} from 'firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
+import { onAuthStateChanged } from '@react-native-firebase/auth';
 
 export default function LoginScreen({ navigation }) {
-  const [mode, setMode] = useState('password');
+  const [mode, setMode] = useState('password'); // 'password' or 'otp'
   const [loginId, setLoginId] = useState('');
   const [phnum, setPhnum] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +19,7 @@ export default function LoginScreen({ navigation }) {
   const isPhone = (val) => /^\+91\d{10}$/.test(val);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth(), async (user) => {
       if (user) {
         await user.reload();
         if (user.emailVerified) {
@@ -44,8 +35,11 @@ export default function LoginScreen({ navigation }) {
       let emailToUse = loginId;
 
       if (isPhone(loginId)) {
-        const q = query(collection(db, 'users'), where('phone', '==', loginId));
-        const snapshot = await getDocs(q);
+        const snapshot = await firestore()
+          .collection('users')
+          .where('phone', '==', loginId)
+          .get();
+
         if (snapshot.empty) {
           Alert.alert('Login Failed', 'Invalid credentials');
           return;
@@ -53,11 +47,11 @@ export default function LoginScreen({ navigation }) {
         const userDoc = snapshot.docs[0].data();
         emailToUse = userDoc.email;
       } else if (!isEmail(loginId)) {
-        Alert.alert('Invalid Input', 'Use a valid email or +91XXXXXXXXXX');
+        Alert.alert('Invalid Input', 'Enter a valid email or +91XXXXXXXXXX');
         return;
       }
 
-      const userCred = await signInWithEmailAndPassword(auth, emailToUse, password);
+      const userCred = await auth().signInWithEmailAndPassword(emailToUse, password);
       const user = userCred.user;
 
       if (!user.emailVerified) {
@@ -78,18 +72,19 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
-    const q = query(collection(db, 'users'), where('phone', '==', phnum));
-    const snapshot = await getDocs(q);
+    const snapshot = await firestore()
+      .collection('users')
+      .where('phone', '==', phnum)
+      .get();
+
     if (snapshot.empty) {
       Alert.alert('No Account', 'No user with this phone');
       return;
     }
 
     try {
-      console.log('Phone Number:', phnum);
-      console.log('Auth Object:', auth);
-      const result = await signInWithPhoneNumber(auth, phnum);
-      setConfirmation(result);
+      const confirmationResult = await auth().signInWithPhoneNumber(phnum);
+      setConfirmation(confirmationResult);
       Alert.alert('OTP Sent', 'Check your messages');
     } catch (err) {
       Alert.alert('OTP Error', err.message);
@@ -106,8 +101,11 @@ export default function LoginScreen({ navigation }) {
       const result = await confirmation.confirm(otp);
       const user = result.user;
 
-      const q = query(collection(db, 'users'), where('phone', '==', phnum));
-      const snapshot = await getDocs(q);
+      const snapshot = await firestore()
+        .collection('users')
+        .where('phone', '==', phnum)
+        .get();
+
       const userEmail = snapshot.docs[0]?.data()?.email;
 
       await user.reload();
@@ -171,15 +169,23 @@ export default function LoginScreen({ navigation }) {
         </>
       )}
 
-      <Text style={styles.toggleText} onPress={() => {
-        setMode(mode === 'password' ? 'otp' : 'password');
-        setConfirmation(null); setOtp('');
-      }}>
+      <Text
+        style={styles.toggleText}
+        onPress={() => {
+          setMode(mode === 'password' ? 'otp' : 'password');
+          setConfirmation(null);
+          setOtp('');
+        }}
+      >
         {mode === 'password' ? 'Login with OTP Instead' : 'Login with Password Instead'}
       </Text>
 
-      <Text style={styles.switchText} onPress={() => navigation.navigate('ForgotPassword')}>Forgot Password?</Text>
-      <Text style={styles.switchText} onPress={() => navigation.replace('Onboarding')}>Don't have an account? Sign Up</Text>
+      <Text style={styles.switchText} onPress={() => navigation.navigate('ForgotPassword')}>
+        Forgot Password?
+      </Text>
+      <Text style={styles.switchText} onPress={() => navigation.replace('Onboarding')}>
+        Don't have an account? Sign Up
+      </Text>
     </View>
   );
 }
