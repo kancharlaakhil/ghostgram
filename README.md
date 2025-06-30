@@ -117,7 +117,13 @@ Ensure these permissions are added in `app.json` or `AndroidManifest.xml`:
 
 ## 📸 Demo Screenshots
 
-_(Add your own screenshots here once available)_
+_![alt text](demo/demoimg1.jpg)_
+_![alt text](demo/demoimg2.jpg)_
+_![alt text](demo/demoimg3.jpg)_
+_![alt text](demo/demoimg4.jpg)_
+_![alt text](demo/demoimg5.jpg)_
+_![alt text](demo/demoimg6.jpg)_
+_![alt text](demo/demoimg7.jpg)_
 
 ---
 
