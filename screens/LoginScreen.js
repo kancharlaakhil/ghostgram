@@ -187,7 +187,7 @@ export default function LoginScreen({ navigation }) {
       <Text style={styles.switchText} onPress={() => navigation.navigate('ForgotPassword')}>
         Forgot Password?
       </Text>
-      <Text style={styles.switchText} onPress={() => navigation.replace('Onboarding')}>
+      <Text style={styles.switchText} onPress={() => navigation.replace('SignUp')}>
         Don't have an account? Sign Up
       </Text>
     </View>

@@ -11,6 +11,12 @@ import {
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+} from 'react-native-popup-menu';
 
 export default function HomeScreen({ navigation }) {
   const [chats, setChats] = useState([]);
@@ -31,7 +37,6 @@ export default function HomeScreen({ navigation }) {
       .onSnapshot(async (doc) => {
         const data = doc.data();
         setUserData({ uid, ...data });
-
         setReceivedCount(data?.receivedRequests?.length || 0);
 
         if (data.friends?.length) {
@@ -43,6 +48,7 @@ export default function HomeScreen({ navigation }) {
                 .where('participants', 'in', [[uid, fid], [fid, uid]])
                 .limit(1)
                 .get();
+
               const chatId = chatSnap.docs[0]?.id;
               let lastTimestamp = new Date(0);
 
@@ -54,6 +60,7 @@ export default function HomeScreen({ navigation }) {
                   .orderBy('timestamp', 'desc')
                   .limit(1)
                   .get();
+
                 lastTimestamp = msgSnap.docs[0]?.data()?.timestamp?.toDate?.() || new Date(0);
               }
 
@@ -70,6 +77,13 @@ export default function HomeScreen({ navigation }) {
           setFriends([]);
         }
       });
+
+    return () => unsubscribeUser();
+  }, []);
+
+  useEffect(() => {
+    if (!userData) return;
+    const uid = userData.uid;
 
     const unsubscribeChats = firestore()
       .collection('chats')
@@ -90,81 +104,76 @@ export default function HomeScreen({ navigation }) {
               .limit(1)
               .get();
 
-            const lastTimestamp =
-              msgSnap.docs[0]?.data()?.timestamp?.toDate?.() || new Date(0);
-
+            const lastTimestamp = msgSnap.docs[0]?.data()?.timestamp?.toDate?.() || new Date(0);
             return { ...chat, lastTimestamp };
           })
         );
 
-        const sortedChats = chatsWithTimestamp.sort(
-          (a, b) => b.lastTimestamp - a.lastTimestamp
-        );
+        const sortedChats = chatsWithTimestamp.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
         setChats(sortedChats);
       });
 
-    return () => {
-      unsubscribeUser();
-      unsubscribeChats();
-    };
-  }, []);
-
-  useEffect(() => {
-  if (!userData) return;
-  const uid = userData.uid;
-
-  const unsubscribeChats = firestore()
-    .collection('chats')
-    .where('participants', 'array-contains', uid)
-    .onSnapshot(async snapshot => {
-      const rawChats = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const chatsWithTimestamp = await Promise.all(
-        rawChats.map(async chat => {
-          const msgSnap = await firestore()
-            .collection('chats')
-            .doc(chat.id)
-            .collection('messages')
-            .orderBy('timestamp', 'desc')
-            .limit(1)
-            .get();
-
-          const lastTimestamp =
-            msgSnap.docs[0]?.data()?.timestamp?.toDate?.() || new Date(0);
-
-          return { ...chat, lastTimestamp };
-        })
-      );
-
-      const sortedChats = chatsWithTimestamp.sort(
-        (a, b) => b.lastTimestamp - a.lastTimestamp
-      );
-      setChats(sortedChats);
-    });
-
-  return () => unsubscribeChats();
-}, [userData]);
-
+    return () => unsubscribeChats();
+  }, [userData]);
 
   useEffect(() => {
     navigation.setOptions({
       headerLeft: () => null,
       headerRight: () => (
-        <TouchableOpacity
-          onPress={async () => {
-            await auth().signOut();
-            navigation.replace('Login');
-          }}
-          style={{ marginRight: 10 }}
-        >
-          <Ionicons name="log-out-outline" size={25} color="red" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
+          <Menu>
+            <MenuTrigger>
+              <Ionicons name="ellipsis-vertical" size={24} color="black" />
+            </MenuTrigger>
+            <MenuOptions
+              optionsContainerStyle={{ padding: 5, borderRadius: 8 }}
+            >
+              <MenuOption onSelect={() => navigation.navigate('ChangePassword')}>
+                <Text style={{ padding: 8, fontSize: 16 }}>Change Password</Text>
+              </MenuOption>
+              <MenuOption onSelect={handleDeleteAccount}>
+                <Text style={{ padding: 8, fontSize: 16, color: 'red' }}>
+                  Delete My Account
+                </Text>
+              </MenuOption>
+              <MenuOption onSelect={async () => {
+                await auth().signOut();
+                navigation.replace('Login');
+              }}>
+                <Text style={{ padding: 8, fontSize: 16 }}>Logout</Text>
+              </MenuOption>
+            </MenuOptions>
+          </Menu>
+        </View>
       )
     });
   }, [navigation]);
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const user = auth().currentUser;
+              await firestore().collection('users').doc(user.uid).delete();
+              await user.delete();
+              Alert.alert('Account deleted');
+              navigation.replace('Login');
+            } catch (error) {
+              console.error('Delete error:', error);
+              Alert.alert('Error', 'You may need to re-authenticate to delete your account.');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const renderChatItem = ({ item }) => {
     const currentUid = userData?.uid;
@@ -426,4 +435,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-

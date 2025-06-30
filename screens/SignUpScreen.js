@@ -13,7 +13,7 @@ import {
   linkWithCredential,
 } from '@react-native-firebase/auth';
 
-export default function OnboardingScreen({ navigation }) {
+export default function SignUpScreen({ navigation }) {
   const [step, setStep] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [name, setName] = useState('');
@@ -30,6 +30,14 @@ export default function OnboardingScreen({ navigation }) {
 
   const isvalidPhone = (value) => /^\+91\d{10}$/.test(value);
   const isvalidEmail = (value) => /\S+@\S+\.\S+/.test(value);
+  const isValidPassword = (password) => {
+    const minLength = password.length >= 6;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+    return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
+  };
 
   const sendOTP = async () => {
     if (!phoneNumber || !name || !gender || !college) {
@@ -87,6 +95,13 @@ export default function OnboardingScreen({ navigation }) {
     if (!isvalidEmail(email)) {
       Alert.alert('Invalid Email', 'Use a valid email address.');
       return;
+    }
+
+    if(!isValidPassword(password)){
+      return Alert.alert(
+        'Error',
+        'Password must be at least 6 characters and include:\n• One uppercase\n• One lowercase\n• One number\n• One special character'
+      );
     }
 
     if (password !== confirmPassword) {

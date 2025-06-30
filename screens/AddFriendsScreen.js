@@ -33,7 +33,7 @@ export default function AddFriendsScreen() {
         .get();
 
       const users = sameCollegeUsers.docs
-        .map(doc => ({ ...doc.data(), uid: doc.id })) // ✅ FIX: add uid from doc.id
+        .map(doc => ({ ...doc.data(), uid: doc.id }))
         .filter(u => u.uid !== currentUID);
 
       setAllCollegeUsers(users);
