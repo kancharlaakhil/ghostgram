@@ -119,6 +119,8 @@ export default function OnboardingScreen({ navigation }) {
         college,
         email,
         friends: [],
+        receivedRequests: [],
+        sentRequests: [],
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
@@ -137,25 +139,26 @@ export default function OnboardingScreen({ navigation }) {
       {step === 1 && (
         <>
           <TextInput
-            placeholder="Mobile Number (+91XXXXXXXXXX)"
+            placeholder="Enter Mobile Number (+91XXXXXXXXXX)"
+            placeholderTextColor='grey'
             value={phoneNumber}
             onChangeText={setPhoneNumber}
             style={styles.input}
             keyboardType="phone-pad"
           />
           <TextInput
-            placeholder="Full Name"
+            placeholder="Enter Full Name"
+            placeholderTextColor='grey'
             value={name}
             onChangeText={setName}
             style={styles.input}
             autoCapitalize="words"
           />
-          <View style={styles.pickerWrapper}>
+          <View style={styles.pickerWrapper} >
             <Picker selectedValue={gender} onValueChange={setGender} style={styles.picker}>
-              <Picker.Item label="Select Gender" value="" />
+              <Picker.Item label="Select Gender" value=""  />
               <Picker.Item label="Male" value="Male" />
               <Picker.Item label="Female" value="Female" />
-              <Picker.Item label="Other" value="Other" />
             </Picker>
           </View>
           <View style={styles.pickerWrapper}>
@@ -181,6 +184,7 @@ export default function OnboardingScreen({ navigation }) {
         <>
           <TextInput
             placeholder="Enter OTP"
+            placeholderTextColor='grey'
             value={otp}
             onChangeText={setOtp}
             style={styles.input}
@@ -194,6 +198,7 @@ export default function OnboardingScreen({ navigation }) {
         <>
           <TextInput
             placeholder="Email"
+            placeholderTextColor='grey'
             value={email}
             onChangeText={setEmail}
             style={styles.input}
@@ -202,6 +207,7 @@ export default function OnboardingScreen({ navigation }) {
           />
           <TextInput
             placeholder="Set Password"
+            placeholderTextColor='grey'
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -212,6 +218,7 @@ export default function OnboardingScreen({ navigation }) {
           </Text>
           <TextInput
             placeholder="Confirm Password"
+            placeholderTextColor='grey'
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showConfirmPassword}
@@ -232,11 +239,56 @@ export default function OnboardingScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginVertical: 5 },
-  heading: { textAlign: 'center', fontSize: 20, marginBottom: 10 },
-  switchText: { marginTop: 20, textAlign: 'center', color: 'blue' },
-  pickerWrapper: { borderWidth: 1, borderColor: '#ccc', marginVertical: 5 },
-  picker: { height: 50, width: '100%' },
-  toggleText: { color: 'blue', marginBottom: 10, textAlign: 'right' },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f9f9f9',
+  },
+  heading: {
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#bbb',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 6,
+    fontSize: 16,
+    color: '#000', 
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    marginVertical: 6,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    paddingVertical: 2, 
+  },
+
+  picker: {
+    height: 52,          
+    paddingBottom: 2,    
+    color: '#000',
+  },
+  toggleText: {
+    color: '#1e90ff',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'right',
+  },
+  switchText: {
+    marginTop: 25,
+    textAlign: 'center',
+    color: '#1e90ff',
+    fontWeight: '500',
+    fontSize: 15,
+  },
 });
+

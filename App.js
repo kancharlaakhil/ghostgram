@@ -1,3 +1,4 @@
+globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 import React from 'react';
 import './firebaseConfig'; // ✅ ensure this runs first
 import { NavigationContainer } from '@react-navigation/native';
@@ -9,6 +10,7 @@ import SnapUploadScreen from './screens/SnapUploadScreen';
 import ForgotPasswordScreen from './screens/ForgotPassword';
 import AddFriendsScreen from './screens/AddFriendsScreen';
 import ChatScreen from './screens/ChatScreen';
+import ReceivedRequestsScreen from './screens/ReceivedRequestsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +25,7 @@ export default function App() {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="AddFriends" component={AddFriendsScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="ReceivedRequests" component={ReceivedRequestsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

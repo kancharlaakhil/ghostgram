@@ -62,7 +62,7 @@ export default function LoginScreen({ navigation }) {
 
       navigation.replace('Home');
     } catch (err) {
-      Alert.alert('Login Error', err.message);
+      Alert.alert('Login Failed', 'Password Incorrect');
     }
   };
 
@@ -129,7 +129,8 @@ export default function LoginScreen({ navigation }) {
       {mode === 'password' ? (
         <>
           <TextInput
-            placeholder="Email or +91XXXXXXXXXX"
+            placeholder="Email or Phone(+91XXXXXXXXXX)"
+            placeholderTextColor='grey'
             value={loginId}
             onChangeText={setLoginId}
             style={styles.input}
@@ -137,6 +138,7 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.passwordWrapper}>
             <TextInput
               placeholder="Password"
+              placeholderTextColor='grey'
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -152,6 +154,7 @@ export default function LoginScreen({ navigation }) {
         <>
           <TextInput
             placeholder="+91XXXXXXXXXX"
+            placeholderTextColor='grey'
             value={phnum}
             onChangeText={setPhnum}
             style={styles.input}
@@ -159,6 +162,7 @@ export default function LoginScreen({ navigation }) {
           {confirmation && (
             <TextInput
               placeholder="Enter OTP"
+              placeholderTextColor='grey'
               value={otp}
               onChangeText={setOtp}
               keyboardType="numeric"
@@ -191,18 +195,53 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginVertical: 5 },
-  heading: { textAlign: 'center', fontSize: 20, marginBottom: 10 },
-  switchText: { marginTop: 20, textAlign: 'center', color: 'blue' },
-  toggleText: { marginTop: 15, textAlign: 'center', color: 'green' },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  heading: {
+    textAlign: 'center',
+    fontSize: 24,
+    marginBottom: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 6,
+    fontSize: 16,
+    color: '#000',
+    backgroundColor: '#fff',
+  },
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ccc',
-    marginVertical: 5,
-    paddingRight: 10,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    marginVertical: 6,
+    backgroundColor: '#fff',
+    paddingLeft: 10,
   },
-  toggle: { paddingHorizontal: 10 },
+  toggle: {
+    paddingHorizontal: 10,
+  },
+  toggleText: {
+    marginTop: 15,
+    textAlign: 'center',
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  switchText: {
+    marginTop: 20,
+    textAlign: 'center',
+    color: '#007AFF',
+    fontWeight: '500',
+  },
 });
+
