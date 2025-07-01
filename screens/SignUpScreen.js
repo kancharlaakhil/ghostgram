@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, Button, StyleSheet, Alert
+  View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { Ionicons } from '@expo/vector-icons';
 
-import { auth, db } from '../firebaseConfig';
 import authNative from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-
 import {
   EmailAuthProvider,
   linkWithCredential,
@@ -31,23 +30,22 @@ export default function SignUpScreen({ navigation }) {
   const isvalidPhone = (value) => /^\+91\d{10}$/.test(value);
   const isvalidEmail = (value) => /\S+@\S+\.\S+/.test(value);
   const isValidPassword = (password) => {
-    const minLength = password.length >= 6;
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
-    return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
+    return (
+      password.length >= 6 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password)
+    );
   };
 
   const sendOTP = async () => {
     if (!phoneNumber || !name || !gender || !college) {
-      Alert.alert('Missing details', 'Please fill in all details before continuing.');
-      return;
+      return Alert.alert('Missing details', 'Please fill in all details.');
     }
 
     if (!isvalidPhone(phoneNumber)) {
-      Alert.alert('Invalid Phone', 'Use +91XXXXXXXXXX format');
-      return;
+      return Alert.alert('Invalid Phone', 'Use +91XXXXXXXXXX format');
     }
 
     const snapshot = await firestore()
@@ -56,14 +54,13 @@ export default function SignUpScreen({ navigation }) {
       .get();
 
     if (!snapshot.empty) {
-      Alert.alert('Phone Exists', 'An account with this phone number already exists.');
-      return;
+      return Alert.alert('Phone Exists', 'This phone is already registered.');
     }
 
     try {
       const result = await authNative().signInWithPhoneNumber(phoneNumber);
       setConfirmation(result);
-      Alert.alert('OTP Sent', 'Enter the code to continue');
+      Alert.alert('OTP Sent', 'Enter the OTP to continue');
       setStep(2);
     } catch (err) {
       Alert.alert('OTP Error', err.message);
@@ -71,42 +68,36 @@ export default function SignUpScreen({ navigation }) {
   };
 
   const verifyOTP = async () => {
-    if (!otp) {
-      Alert.alert('Missing OTP', 'Please enter the OTP sent to your phone.');
-      return;
-    }
+    if (!otp) return Alert.alert('Missing OTP', 'Please enter the OTP.');
 
     try {
       const result = await confirmation.confirm(otp);
       setVerifiedUser(result.user);
-      Alert.alert('Phone verified', 'Proceed to Email and Password step.');
+      Alert.alert('Phone Verified', 'Now set up email and password.');
       setStep(3);
     } catch (err) {
-      Alert.alert('OTP Failed', 'Please enter the correct OTP.');
+      Alert.alert('OTP Failed', 'Incorrect OTP');
     }
   };
 
   const finishSignup = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Missing details', 'Please fill in all details.');
-      return;
+      return Alert.alert('Missing details', 'All fields are required.');
     }
 
     if (!isvalidEmail(email)) {
-      Alert.alert('Invalid Email', 'Use a valid email address.');
-      return;
+      return Alert.alert('Invalid Email', 'Use a valid email address.');
     }
 
-    if(!isValidPassword(password)){
+    if (!isValidPassword(password)) {
       return Alert.alert(
-        'Error',
-        'Password must be at least 6 characters and include:\n• One uppercase\n• One lowercase\n• One number\n• One special character'
+        'Weak Password',
+        'Password must include:\n• At least 6 characters\n• One uppercase\n• One lowercase\n• One number\n• One special character'
       );
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
-      return;
+      return Alert.alert('Mismatch', 'Passwords do not match.');
     }
 
     const snapshot = await firestore()
@@ -115,8 +106,7 @@ export default function SignUpScreen({ navigation }) {
       .get();
 
     if (!snapshot.empty) {
-      Alert.alert('Email Exists', 'An account with this Email already exists.');
-      return;
+      return Alert.alert('Email Exists', 'Email is already in use.');
     }
 
     try {
@@ -139,7 +129,7 @@ export default function SignUpScreen({ navigation }) {
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
-      Alert.alert('Email Sent', 'Please verify your email to complete registration.', [
+      Alert.alert('Verify Email', 'Check your inbox to activate your account.', [
         { text: 'OK', onPress: () => navigation.replace('Login') },
       ]);
     } catch (err) {
@@ -162,16 +152,15 @@ export default function SignUpScreen({ navigation }) {
             keyboardType="phone-pad"
           />
           <TextInput
-            placeholder="Enter Full Name"
+            placeholder="Full Name"
             placeholderTextColor='grey'
             value={name}
             onChangeText={setName}
             style={styles.input}
-            autoCapitalize="words"
           />
-          <View style={styles.pickerWrapper} >
+          <View style={styles.pickerWrapper}>
             <Picker selectedValue={gender} onValueChange={setGender} style={styles.picker}>
-              <Picker.Item label="Select Gender" value=""  />
+              <Picker.Item label="Select Gender" value="" />
               <Picker.Item label="Male" value="Male" />
               <Picker.Item label="Female" value="Female" />
             </Picker>
@@ -220,28 +209,40 @@ export default function SignUpScreen({ navigation }) {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          <TextInput
-            placeholder="Set Password"
-            placeholderTextColor='grey'
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            style={styles.input}
-          />
-          <Text style={styles.toggleText} onPress={() => setShowPassword((prev) => !prev)}>
-            {showPassword ? 'Hide Password' : 'Show Password'}
-          </Text>
-          <TextInput
-            placeholder="Confirm Password"
-            placeholderTextColor='grey'
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            style={styles.input}
-          />
-          <Text style={styles.toggleText} onPress={() => setShowConfirmPassword((prev) => !prev)}>
-            {showConfirmPassword ? 'Hide Confirm Password' : 'Show Confirm Password'}
-          </Text>
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              placeholder="Set Password"
+              placeholderTextColor='grey'
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              style={[styles.input, { flex: 1 }]}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword((prev) => !prev)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={22} color="#555" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor='grey'
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              style={[styles.input, { flex: 1}]}
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword((prev) => !prev)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons name={showConfirmPassword ? 'eye' : 'eye-off'} size={22} color="#555" />
+            </TouchableOpacity>
+          </View>
+
           <Button title="Finish Signup" onPress={finishSignup} />
         </>
       )}
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginVertical: 6,
     fontSize: 16,
-    color: '#000', 
+    color: '#000',
   },
   pickerWrapper: {
     borderWidth: 1,
@@ -284,19 +285,23 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     backgroundColor: '#fff',
     overflow: 'hidden',
-    paddingVertical: 2, 
   },
-
   picker: {
-    height: 52,          
-    paddingBottom: 2,    
+    height: 52,
     color: '#000',
   },
-  toggleText: {
-    color: '#1e90ff',
-    fontSize: 14,
-    marginBottom: 10,
-    textAlign: 'right',
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    marginVertical: 6,
+    backgroundColor: '#fff',
+    paddingLeft: 10,
+  },
+  eyeIcon: {
+    paddingHorizontal: 12,
   },
   switchText: {
     marginTop: 25,
@@ -306,4 +311,3 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 });
-

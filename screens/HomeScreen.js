@@ -161,16 +161,63 @@ export default function HomeScreen({ navigation }) {
           onPress: async () => {
             try {
               const user = auth().currentUser;
-              await firestore().collection('users').doc(user.uid).delete();
+              const uid = user.uid;
+
+              const userDoc = await firestore().collection('users').doc(uid).get();
+              const userData = userDoc.data();
+              const friendUIDs = userData?.friends || [];
+
+              const batch = firestore().batch();
+
+              for (let friendUID of friendUIDs) {
+                const friendRef = firestore().collection('users').doc(friendUID);
+                batch.update(friendRef, {
+                  friends: firestore.FieldValue.arrayRemove(uid),
+                });
+              }
+
+              const chatSnapshot = await firestore()
+                .collection('chats')
+                .where('participants', 'array-contains', uid)
+                .get();
+
+              for (const chatDoc of chatSnapshot.docs) {
+                const messagesSnapshot = await firestore()
+                  .collection('chats')
+                  .doc(chatDoc.id)
+                  .collection('messages')
+                  .get();
+
+                for (const messageDoc of messagesSnapshot.docs) {
+                  batch.delete(
+                    firestore()
+                      .collection('chats')
+                      .doc(chatDoc.id)
+                      .collection('messages')
+                      .doc(messageDoc.id)
+                  );
+                }
+
+                batch.delete(firestore().collection('chats').doc(chatDoc.id));
+              }
+
+              batch.delete(firestore().collection('users').doc(uid));
+
+              await batch.commit();
+
               await user.delete();
+
               Alert.alert('Account deleted');
               navigation.replace('Login');
             } catch (error) {
               console.error('Delete error:', error);
-              Alert.alert('Error', 'You may need to re-authenticate to delete your account.');
+              Alert.alert(
+                'Error',
+                'You may need to re-authenticate to delete your account.'
+              );
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
@@ -235,7 +282,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const filteredFriends = friends
-    .filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(f => f.name && f.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => b.lastTimestamp - a.lastTimestamp);
 
   const anonymousChats = chats

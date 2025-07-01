@@ -52,10 +52,8 @@ export default function ChangePasswordScreen({ navigation }) {
         oldPassword
       );
 
-      // Re-authenticate user
       await user.reauthenticateWithCredential(credential);
 
-      // Update password
       await user.updatePassword(newPassword);
 
       Alert.alert('Success', 'Password changed successfully.');

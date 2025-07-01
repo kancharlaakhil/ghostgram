@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity,
 } from 'react-native';
-import { auth, db } from '../firebaseConfig';
+import { Ionicons } from '@expo/vector-icons';
 import firestore from '@react-native-firebase/firestore';
-import { onAuthStateChanged } from '@react-native-firebase/auth';
+import auth, { onAuthStateChanged } from '@react-native-firebase/auth';
 
 export default function LoginScreen({ navigation }) {
-  const [mode, setMode] = useState('password'); // 'password' or 'otp'
+  const [mode, setMode] = useState('password');
   const [loginId, setLoginId] = useState('');
   const [phnum, setPhnum] = useState('');
   const [password, setPassword] = useState('');
@@ -142,10 +142,13 @@ export default function LoginScreen({ navigation }) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              style={[styles.input, { flex: 1 }]}
+              style={[styles.input, { flex: 1}]}
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.toggle}>
-              <Text style={{ color: 'blue' }}>{showPassword ? 'Hide' : 'Show'}</Text>
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.iconToggle}
+            >
+              <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={22} color="#555" />
             </TouchableOpacity>
           </View>
           <Button title="Login" onPress={handlePasswordLogin} />
@@ -228,7 +231,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingLeft: 10,
   },
-  toggle: {
+  iconToggle: {
     paddingHorizontal: 10,
   },
   toggleText: {
@@ -244,4 +247,3 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-

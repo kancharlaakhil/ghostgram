@@ -17,7 +17,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   const handleEmailReset = async () => {
     if (!email) {
-      Alert.alert('Missing Email', 'Please enter your registered email.');
+      Alert.alert('Missing Email', 'Please enter your Registered Email.');
       return;
     }
 
@@ -50,7 +50,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       <Text style={styles.heading}>Forgot Password</Text>
 
       <TextInput
-        placeholder="Enter your registered email"
+        placeholder="Enter your Registered Email"
         placeholderTextColor="grey"
         value={email}
         onChangeText={setEmail}
