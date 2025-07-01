@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  TouchableOpacity,
   Alert,
   StyleSheet,
 } from 'react-native';
@@ -51,6 +51,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
       <TextInput
         placeholder="Enter your registered email"
+        placeholderTextColor="grey"
         value={email}
         onChangeText={setEmail}
         style={styles.input}
@@ -58,13 +59,57 @@ export default function ForgotPasswordScreen({ navigation }) {
         autoCapitalize="none"
       />
 
-      <Button title="Send Reset Link" onPress={handleEmailReset} />
+      <TouchableOpacity style={styles.button} onPress={handleEmailReset}>
+        <Text style={styles.buttonText}>Send Reset Link</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigation.goBack()}>
+        <Text style={styles.backText}>← Back to Login</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
-  heading: { textAlign: 'center', fontSize: 22, marginBottom: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafe',
+    padding: 24,
+    justifyContent: 'center',
+  },
+  heading: {
+    fontSize: 24,
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 24,
+    color: '#1e1e1e',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 14,
+    backgroundColor: 'white',
+    fontSize: 16,
+    color: '#000',
+    marginBottom: 16,
+  },
+  button: {
+    backgroundColor: '#1e90ff',
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  backText: {
+    textAlign: 'center',
+    color: '#1e90ff',
+    fontSize: 14,
+    marginTop: 6,
+  },
 });
