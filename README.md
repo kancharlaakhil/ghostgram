@@ -107,6 +107,8 @@ Ensure these permissions are added in `app.json` or `AndroidManifest.xml`:
 
 ## 🧪 Testing
 
+- To install Android internal distribution build [click here](https://expo.dev/accounts/akhil_28_11/projects/ghostgram/builds/f7d28900-fd71-4a13-b0eb-6405564699f1)
+
 - Test on a **real device** with **Expo Dev Client**
 - Use **physical camera** to detect and blur faces
 - OTP auth should work with live Firebase project
