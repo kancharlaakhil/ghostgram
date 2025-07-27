@@ -5,6 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import firestore from '@react-native-firebase/firestore';
 import auth, { onAuthStateChanged } from '@react-native-firebase/auth';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen({ navigation }) {
   const [mode, setMode] = useState('password');
@@ -123,6 +124,7 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={styles.container}>
       <Text style={styles.heading}>Log In</Text>
 
@@ -194,6 +196,7 @@ export default function LoginScreen({ navigation }) {
         Don't have an account? Sign Up
       </Text>
     </View>
+    </SafeAreaView>
   );
 }
 

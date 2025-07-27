@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChangePasswordScreen({ navigation }) {
   const [oldPassword, setOldPassword] = useState('');
@@ -84,6 +85,7 @@ export default function ChangePasswordScreen({ navigation }) {
   );
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={styles.container}>
       {renderPasswordInput('Enter old password', oldPassword, setOldPassword, showOld, () => setShowOld(!showOld))}
       {renderPasswordInput('Enter new password', newPassword, setNewPassword, showNew, () => setShowNew(!showNew))}
@@ -93,6 +95,7 @@ export default function ChangePasswordScreen({ navigation }) {
         <Text style={styles.buttonText}>Change Password</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 }
 

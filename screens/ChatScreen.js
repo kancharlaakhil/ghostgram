@@ -34,6 +34,7 @@ import {
 } from '@shopify/react-native-skia';
 import ViewShot from 'react-native-view-shot';
 import moment from 'moment';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatScreen({ route }) {
   const { chatId } = route.params;
@@ -255,6 +256,7 @@ export default function ChatScreen({ route }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -375,6 +377,7 @@ export default function ChatScreen({ route }) {
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

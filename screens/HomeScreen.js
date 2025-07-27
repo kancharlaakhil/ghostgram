@@ -17,6 +17,7 @@ import {
   MenuOption,
   MenuTrigger,
 } from 'react-native-popup-menu';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen({ navigation }) {
   const [chats, setChats] = useState([]);
@@ -24,7 +25,7 @@ export default function HomeScreen({ navigation }) {
   const [search, setSearch] = useState('');
   const [userData, setUserData] = useState(null);
   const [receivedCount, setReceivedCount] = useState(0);
-  const [tab, setTab] = useState('friends'); // 'friends' | 'anonymous'
+  const [tab, setTab] = useState('friends');
 
   useEffect(() => {
     const currentUser = auth().currentUser;
@@ -293,6 +294,7 @@ export default function HomeScreen({ navigation }) {
     .sort((a, b) => b.lastTimestamp - a.lastTimestamp);
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={styles.container}>
       <TextInput
         placeholder="Search friends..."
@@ -370,6 +372,7 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
     </View>
+    </SafeAreaView>
   );
 }
 

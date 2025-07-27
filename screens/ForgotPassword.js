@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -46,6 +47,7 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={styles.container}>
       <Text style={styles.heading}>Forgot Password</Text>
 
@@ -67,6 +69,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         <Text style={styles.backText}>← Back to Login</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 }
 

@@ -28,6 +28,7 @@ import FaceDetection from '@react-native-ml-kit/face-detection';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import * as FileSystem from 'expo-file-system';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SnapUploadScreen({ navigation }) {
   const cameraRef = useRef(null);
@@ -239,6 +240,7 @@ export default function SnapUploadScreen({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={styles.container}>
       {!photoUri && !device ? (
         <View style={styles.centered}>
@@ -311,6 +313,7 @@ export default function SnapUploadScreen({ navigation }) {
         </View>
       )}
     </View>
+    </SafeAreaView>
   );
 }
 

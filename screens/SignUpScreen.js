@@ -11,6 +11,7 @@ import {
   EmailAuthProvider,
   linkWithCredential,
 } from '@react-native-firebase/auth';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignUpScreen({ navigation }) {
   const [step, setStep] = useState(1);
@@ -138,6 +139,7 @@ export default function SignUpScreen({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={styles.container}>
       <Text style={styles.heading}>Sign Up</Text>
 
@@ -251,6 +253,7 @@ export default function SignUpScreen({ navigation }) {
         Already have an account? Log In
       </Text>
     </View>
+    </SafeAreaView>
   );
 }
 

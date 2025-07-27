@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AddFriendsScreen() {
   const [allCollegeUsers, setAllCollegeUsers] = useState([]);
@@ -162,6 +163,7 @@ export default function AddFriendsScreen() {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={{ flex: 1, padding: 10 }}>
       <Text style={styles.heading}>Add or Manage Friends</Text>
 
@@ -196,6 +198,7 @@ export default function AddFriendsScreen() {
           .map(renderUserItem)
       )}
     </View>
+    </SafeAreaView>
   );
 }
 

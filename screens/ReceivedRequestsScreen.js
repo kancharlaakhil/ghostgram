@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ReceivedRequestsScreen() {
   const [requests, setRequests] = useState([]);
@@ -123,6 +124,7 @@ export default function ReceivedRequestsScreen() {
   }
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
     <View style={{ flex: 1, padding: 10 }}>
       <Text style={styles.heading}>Received Friend Requests</Text>
       <FlatList
@@ -134,6 +136,7 @@ export default function ReceivedRequestsScreen() {
         }
       />
     </View>
+    </SafeAreaView>
   );
 }
 
